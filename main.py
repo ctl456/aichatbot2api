@@ -8,7 +8,7 @@ import re
 from fastapi import FastAPI, HTTPException, Header
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from typing import List, Optional, Dict, Any, AsyncGenerator, Tuple
+from typing import List, Optional, Dict, Any, AsyncGenerator, Tuple, Union
 import httpx
 import logging
 import hashlib
@@ -50,9 +50,14 @@ class SessionManager:
 session_manager = SessionManager()
 
 
+
+class ContentItem(BaseModel):
+    type: str
+    text: str
+
 class Message(BaseModel):
     role: str
-    content: str
+    content: Union[str, List[ContentItem]]
     name: Optional[str] = None
 
 
@@ -455,11 +460,13 @@ async def list_models():
 @app.post("/v1/chat/completions")
 async def chat_completions(request: ChatCompletionRequest, authorization: str = Header(None)):
     await verify_api_key(authorization)
+    print(request)
 
     logger.info(f"Received chat request: model={request.model}, stream={request.stream}")
 
     messages = [msg.model_dump() for msg in request.messages]
 
+    print(messages)
     return StreamingResponse(
         generate_response(
             messages=messages,
